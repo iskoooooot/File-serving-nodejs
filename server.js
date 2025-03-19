@@ -1,75 +1,62 @@
-const http = require('http');
-const fs = require('fs');
-const path = require('path');
-const mime = require('mime-types');
+const express = require('express');
 const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
+const mime = require('mime-types');
 
+const app = express();
+
+// Set static folder to serve index.html and other files
+app.use(express.static(path.join(__dirname, 'public')));
+
+// Multer Storage Configuration
 const storage = multer.diskStorage({
-destination: (req, file, cb) => {
-const uploadDir = './uploads/';
-fs.mkdir(uploadDir, { recursive: true }, (err) => {
-if (err) {
-console.error(err);
-}
-cb(null, uploadDir);
-});
-},
-filename: (req, file, cb) => {
-cb(null, file.originalname);
-}
+  destination: (req, file, cb) => {
+    const uploadDir = './uploads/';
+    fs.mkdir(uploadDir, { recursive: true }, (err) => {
+      if (err) {
+        console.error(err);
+      }
+      cb(null, uploadDir);
+    });
+  },
+  filename: (req, file, cb) => {
+    cb(null, file.originalname);
+  }
 });
 
+// Multer File Upload Configuration
 const upload = multer({
-storage: storage,
-limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
-fileFilter(req, file, cb) {
-if (!file.originalname.match(/\.(txt|jpg|jpeg|png|gif)$/)) {
-return cb(new Error('Only text and image files are allowed!'));
-}
-cb(null, true);
-}
+  storage: storage,
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
+  fileFilter(req, file, cb) {
+    if (!file.originalname.match(/\.(txt|jpg|jpeg|png|gif)$/)) {
+      return cb(new Error('Only text and image files are allowed!'));
+    }
+    cb(null, true);
+  }
 });
 
-const server = http.createServer((req, res) => {
-let filePath = path.join(__dirname, req.url === '/' ? 'public/index.html' : req.url);
-
-if (req.url.startsWith('/uploads/')) {
-filePath = path.join(__dirname, req.url);
-}
-
-if (req.url === '/upload') {
-upload(req, res, (err) => {
-if (err) {
-res.writeHead(500, { 'Content-Type': 'text/html' });
-res.end(`Server Error: ${err.code}`, 'utf8');
-return;
-}
-
-res.writeHead(201, { 'Content-Type': 'text/html' });
-res.end('<h1>File uploaded successfully!</h1>', 'utf8');
-});
-} else {
-if (req.url.includes('?file=')) {
-const fileName = req.url.split('?file=')[1];
-filePath = path.join(__dirname, 'uploads', fileName);
-}
-
-fs.readFile(filePath, (err, content) => {
-if (err) {
-if (err.code === 'ENOENT') {
-res.writeHead(404, { 'Content-Type': 'text/html' });
-res.end('<h1>404 - File Not Found</h1>', 'utf8');
-} else {
-res.writeHead(500);
-res.end(`Server Error: ${err.code}`);
-}
-} else {
-res.writeHead(200, { 'Content-Type': mime.lookup(filePath) });
-res.end(content, 'utf8');
-}
-});
-}
+// Route to Handle File Upload
+app.post('/upload', upload.single('file'), (req, res) => {
+  if (!req.file) {
+    return res.status(400).send('<h1>No file uploaded!</h1>');
+  }
+  res.send('<h1>File uploaded successfully!</h1>');
 });
 
+// Serve Uploaded Files
+app.get('/uploads/:filename', (req, res) => {
+  const filePath = path.join(__dirname, 'uploads', req.params.filename);
+  fs.access(filePath, fs.constants.F_OK, (err) => {
+    if (err) {
+      res.status(404).send('<h1>404 - File Not Found</h1>');
+    } else {
+      res.sendFile(filePath);
+    }
+  });
+});
+
+// Start Server
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
