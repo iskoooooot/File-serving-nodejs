@@ -6,7 +6,13 @@ const multer = require('multer');
 
 const storage = multer.diskStorage({
 destination: (req, file, cb) => {
-cb(null, './uploads/');
+const uploadDir = './uploads/';
+fs.mkdir(uploadDir, { recursive: true }, (err) => {
+if (err) {
+console.error(err);
+}
+cb(null, uploadDir);
+});
 },
 filename: (req, file, cb) => {
 cb(null, file.originalname);
