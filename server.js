@@ -2,13 +2,46 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 const mime = require('mime-types');
-const formidable = require('formidable');
+const multer = require('multer');
+
+const storage = multer.diskStorage({
+destination: (req, file, cb) => {
+cb(null, './uploads/');
+},
+filename: (req, file, cb) => {
+cb(null, file.originalname);
+}
+});
+
+const upload = multer({
+storage: storage,
+limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
+fileFilter(req, file, cb) {
+if (!file.originalname.match(/\.(txt|jpg|jpeg|png|gif)$/)) {
+return cb(new Error('Only text and image files are allowed!'));
+}
+cb(null, true);
+}
+});
 
 const server = http.createServer((req, res) => {
-let filePath = path.join(__dirname, 'public', req.url === '/' ? 'index.html' : req.url);
+let filePath = path.join(__dirname, req.url === '/' ? 'public/index.html' : req.url);
+
+if (req.url.startsWith('/uploads/')) {
+filePath = path.join(__dirname, req.url);
+}
 
 if (req.url === '/upload') {
-handleFileUpload(req, res);
+upload(req, res, (err) => {
+if (err) {
+res.writeHead(500, { 'Content-Type': 'text/html' });
+res.end(`Server Error: ${err.code}`, 'utf8');
+return;
+}
+
+res.writeHead(201, { 'Content-Type': 'text/html' });
+res.end('<h1>File uploaded successfully!</h1>', 'utf8');
+});
 } else {
 fs.readFile(filePath, (err, content) => {
 if (err) {
@@ -26,37 +59,6 @@ res.end(content, 'utf8');
 });
 }
 });
-
-function handleFileUpload(req, res) {
-const uploadDir = path.join(__dirname, 'uploads');
-const form = new formidable.IncomingForm();
-form.uploadDir = uploadDir;
-form.keepExtensions = true;
-form.maxFieldsSize = 10 * 1024 * 1024; // 10MB
-form.maxFileSize = 10 * 1024 * 1024; // 10MB
-
-form.parse(req, (err, fields, files) => {
-if (err) {
-res.writeHead(500, { 'Content-Type': 'text/html' });
-res.end(`Server Error: ${err.code}`, 'utf8');
-return;
-}
-
-const file = files.file;
-const filePath = path.join(uploadDir, file.name);
-
-fs.rename(file.path, filePath, (err) => {
-if (err) {
-res.writeHead(500, { 'Content-Type': 'text/html' });
-res.end(`Server Error: ${err.code}`, 'utf8');
-return;
-} else {
-res.writeHead(201, { 'Content-Type': 'text/html' });
-res.end('<h1>File uploaded successfully!</h1>', 'utf8');
-}
-});
-});
-}
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
