@@ -40,4 +40,29 @@
 <body>
   <h1>Upload a File</h1>
   <form id="uploadForm" action="/upload" method="POST" enctype="multipart/form-data">
-    <input type="file" name
+    <input type="file" name="file" id="fileInput" />
+    <button type="submit">Upload</button>
+  </form>
+
+  <div id="message"></div>
+
+  <script>
+    document.getElementById('uploadForm').onsubmit = function (e) {
+      const fileInput = document.getElementById('fileInput');
+      const messageDiv = document.getElementById('message');
+      
+      if (!fileInput.files.length) {
+        e.preventDefault();
+        messageDiv.innerHTML = "Please select a file before uploading.";
+      } else {
+        const allowedExtensions = /(\.txt|\.jpg|\.jpeg|\.png|\.gif)$/i;
+        if (!allowedExtensions.exec(fileInput.value)) {
+          e.preventDefault();
+          messageDiv.innerHTML = "Invalid file format! Only text and image files are allowed.";
+          fileInput.value = "";
+        }
+      }
+    };
+  </script>
+</body>
+</html>
