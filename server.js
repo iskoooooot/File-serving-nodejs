@@ -49,6 +49,11 @@ res.writeHead(201, { 'Content-Type': 'text/html' });
 res.end('<h1>File uploaded successfully!</h1>', 'utf8');
 });
 } else {
+if (req.url.includes('?file=')) {
+const fileName = req.url.split('?file=')[1];
+filePath = path.join(__dirname, 'uploads', fileName);
+}
+
 fs.readFile(filePath, (err, content) => {
 if (err) {
 if (err.code === 'ENOENT') {
