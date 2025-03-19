@@ -1,16 +1,43 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Node.js File Server</title>
+  <title>File Upload Service</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f4f4f4;
+      text-align: center;
+      margin-top: 50px;
+    }
+    form {
+      background: #fff;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      display: inline-block;
+    }
+    input, button {
+      margin-top: 10px;
+      padding: 10px;
+      width: 250px;
+    }
+    button {
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #45a049;
+    }
+    #message {
+      margin-top: 20px;
+      color: red;
+    }
+  </style>
 </head>
 <body>
-<h1>Welcome to the Node.js File Server</h1>
-<form id="upload-form" action="/upload" method="POST" enctype="multipart/form-data">
-  <input type="file" name="file" id="file-input" required>
-  <button type="submit">Upload File</button>
-</form>
-<div id="upload-status"></div>
-</body>
-</html>
+  <h1>Upload a File</h1>
+  <form id="uploadForm" action="/upload" method="POST" enctype="multipart/form-data">
+    <input type="file" name
