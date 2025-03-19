@@ -15,7 +15,8 @@ const storage = multer.diskStorage({
     const uploadDir = './uploads/';
     fs.mkdir(uploadDir, { recursive: true }, (err) => {
       if (err) {
-        console.error(err);
+        console.error('Error creating upload directory:', err);
+        return cb(err);
       }
       cb(null, uploadDir);
     });
@@ -38,11 +39,24 @@ const upload = multer({
 });
 
 // Route to Handle File Upload
-app.post('/upload', upload.single('file'), (req, res) => {
-  if (!req.file) {
-    return res.status(400).send('<h1>No file uploaded!</h1>');
-  }
-  res.send('<h1>File uploaded successfully!</h1>');
+app.post('/upload', (req, res) => {
+  upload.single('file')(req, res, (err) => {
+    if (err instanceof multer.MulterError) {
+      console.error('Multer Error:', err.message);
+      return res.status(500).send(`<h1>Internal Server Error: ${err.message}</h1>`);
+    } else if (err) {
+      console.error('Upload Error:', err.message);
+      return res.status(400).send(`<h1>Error: ${err.message}</h1>`);
+    }
+
+    if (!req.file) {
+      console.log('No file uploaded');
+      return res.status(400).send('<h1>No file uploaded!</h1>');
+    }
+
+    console.log('File uploaded successfully:', req.file.originalname);
+    res.send('<h1>File uploaded successfully!</h1>');
+  });
 });
 
 // Serve Uploaded Files
@@ -50,11 +64,23 @@ app.get('/uploads/:filename', (req, res) => {
   const filePath = path.join(__dirname, 'uploads', req.params.filename);
   fs.access(filePath, fs.constants.F_OK, (err) => {
     if (err) {
+      console.error('File not found:', req.params.filename);
       res.status(404).send('<h1>404 - File Not Found</h1>');
     } else {
       res.sendFile(filePath);
     }
   });
+});
+
+// Error Handling Middleware for Unexpected Errors
+app.use((err, req, res, next) => {
+  console.error('Unexpected Error:', err.message);
+  res.status(500).send('<h1>Internal Server Error</h1>');
+});
+
+// Handle Invalid Routes
+app.use((req, res) => {
+  res.status(404).send('<h1>404 - Page Not Found</h1>');
 });
 
 // Start Server
